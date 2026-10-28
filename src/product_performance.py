@@ -2,9 +2,7 @@ from pathlib import Path
 import pandas as pd
 from load_data import load_merged
 
-INCLUDED_STATUSES = ["delivered"]
-START, END = "2017-01-01", "2018-09-01"   # END is exclusive
-CAT = "product_category_name_english"
+from config import INCLUDED_STATUSES, START, END, CATEGORY_COL as CAT
 OUT = Path("outputs")
 OUT.mkdir(exist_ok=True)
 

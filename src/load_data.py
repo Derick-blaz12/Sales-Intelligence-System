@@ -15,5 +15,17 @@ def load_merged() -> pd.DataFrame:
         items.merge(products, on="product_id", how="left", validate="many_to_one")
              .merge(orders, on="order_id", how="left", validate="many_to_one")
     )
+
+        # Parse timestamps (errors="coerce" turns unparseable values into NaT
+    # instead of crashing, so we can count them rather than miss them)
+    date_cols = [
+        "order_purchase_timestamp",
+        "order_approved_at",
+        "order_delivered_carrier_date",
+        "order_delivered_customer_date",
+        "order_estimated_delivery_date",
+    ]
+    for col in date_cols:
+        merged[col] = pd.to_datetime(merged[col], errors="coerce")
     assert len(merged) == len(items), "Merge changed the row count!"
     return merged

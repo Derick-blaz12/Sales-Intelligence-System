@@ -11,12 +11,15 @@ def load_merged() -> pd.DataFrame:
     products = pd.read_csv(RAW / "olist_products_dataset.csv")
     orders = pd.read_csv(RAW / "olist_orders_dataset.csv")
 
+    translation = pd.read_csv(RAW / "product_category_name_translation.csv")
+
     merged = (
         items.merge(products, on="product_id", how="left", validate="many_to_one")
              .merge(orders, on="order_id", how="left", validate="many_to_one")
+             .merge(translation, on="product_category_name", how="left", validate="many_to_one")
     )
 
-        # Parse timestamps (errors="coerce" turns unparseable values into NaT
+    # Parse timestamps (errors="coerce" turns unparseable values into NaT
     # instead of crashing, so we can count them rather than miss them)
     date_cols = [
         "order_purchase_timestamp",

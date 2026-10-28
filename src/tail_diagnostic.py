@@ -19,6 +19,7 @@ def section(title: str) -> None:
 def main() -> None:
     pd.set_option("display.width", 200)
     pd.set_option("display.max_rows", 100)
+    pd.set_option("display.max_columns", None)
     pd.set_option("display.float_format", "{:,.1f}".format)
 
     df = load_merged()

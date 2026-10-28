@@ -16,3 +16,12 @@ print("\nPortuguese names lacking a translation:")
 print(df.loc[missing_en & ~missing_pt, "product_category_name"].value_counts())
 
 print(f"\nDistinct English categories: {df['product_category_name_english'].nunique()}")
+
+print("\n--- After fixes ---")
+print(df["product_category_name_english"].isna().sum())            # expect 0
+print((df["product_category_name_english"] == "unknown").sum())    # expect 1,603
+print(df["product_category_name_english"].nunique())               # expect 74
+
+blank = df[df["product_category_name"].isna()]
+print(f"Distinct products with no category: {blank['product_id'].nunique():,}")
+print(f"Their item value: {blank['price'].sum():,.2f}")

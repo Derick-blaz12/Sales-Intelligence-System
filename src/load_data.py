@@ -19,6 +19,21 @@ def load_merged() -> pd.DataFrame:
              .merge(translation, on="product_category_name", how="left", validate="many_to_one")
     )
 
+    manual_translations = {
+        "pc_gamer": "pc_gamer",
+        "portateis_cozinha_e_preparadores_de_alimentos":
+            "portable_kitchen_and_food_preparers",
+    }
+    fill = merged["product_category_name"].map(manual_translations)
+    merged["product_category_name_english"] = (
+        merged["product_category_name_english"].fillna(fill)
+    )
+
+    # Items whose product has no category at all stay visible as "unknown"
+    merged["product_category_name_english"] = (
+        merged["product_category_name_english"].fillna("unknown")
+    )
+
     # Parse timestamps (errors="coerce" turns unparseable values into NaT
     # instead of crashing, so we can count them rather than miss them)
     date_cols = [

@@ -66,8 +66,8 @@ Detailed notes are in [`docs/`](docs/).
 You need Python 3.10 or newer. These commands are for Windows Git Bash.
 
 ```bash
-git clone [your-repo-url]
-cd sales-intelligence
+git clone https://github.com/Derick-blaz12/Sales-Intelligence-System.git
+cd Sales-Intelligence-System
 python -m venv .venv
 source .venv/Scripts/activate      # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt

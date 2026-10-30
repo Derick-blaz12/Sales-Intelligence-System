@@ -1,9 +1,10 @@
 # Sales Intelligence System
 
 A Python data-analysis project that turns raw e-commerce order data into
-trustworthy sales metrics, monthly trends and product-performance findings.
+trustworthy sales metrics, monthly trends, product-performance findings and
+customer-behaviour insights.
 
-Built with Python, pandas, NumPy and Matplotlib on the public
+Built with Python, pandas, NumPy, Matplotlib and pytest on the public
 [Olist Brazilian E-Commerce dataset](https://www.kaggle.com/olistbr/brazilian-ecommerce).
 This is an e-commerce **case study**. Its findings come from a Brazilian
 marketplace, not from a real Nigerian retailer, and should be read that way.
@@ -11,7 +12,7 @@ marketplace, not from a real Nigerian retailer, and should be read that way.
 ## Key findings
 
 All figures cover **delivered orders purchased from January 2017 to August 2018**
-(13,181,027.13 BRL item value, excluding freight).
+(96,211 orders, 13,181,027.13 BRL item value, excluding freight).
 
 ### 1. Monthly item value
 
@@ -35,6 +36,21 @@ value, while `bed_bath_table` leads on number of orders, so the two rankings dif
 Value is concentrated: the top 1% of products (321) hold 24.5% of item value, the
 top 10% hold 60.9% and the top 20% hold 74.8%. The long tail is still material.
 
+### 4. Customers
+
+Customers are identified by `customer_unique_id`. Olist's `customer_id` is
+generated per order, so counting repeats with it would wrongly give 0%.
+
+- 93,104 unique customers placed 96,211 orders (1.03 orders per customer).
+- **97.0% bought once; about 3% returned** (3.00% to 3.03% across three
+  definitions: with or without 2016 orders, with or without non-delivered orders).
+- Repeat customers are 3.0% of customers and **5.5% of item value**. They spend
+  more per person (260.08 vs 137.91) by ordering more often, not by placing larger
+  orders (average order 123.02 vs 137.91).
+- Among customers observable for at least 90 days, 2.28% bought again within 90 days.
+- 8 of the top 10 customers by value placed a single order, so "top customers"
+  here mostly means one expensive purchase, not loyalty.
+
 ### Other findings
 
 - Products with 2 or fewer orders are 76% of products sold. Under a 90/180-day
@@ -48,16 +64,19 @@ top 10% hold 60.9% and the top 20% hold 74.8%. The long tail is still material.
 ## Method
 
 1. **Data discovery.** One row in the order-items file is one item within an order.
-2. **Joins.** Items, products, orders and category translations are merged with
-   `validate="many_to_one"` and a row-count assertion, so joins cannot silently
-   change what a row means.
+2. **Joins.** Items, products, orders, customers and category translations are
+   merged with `validate="many_to_one"` and a row-count assertion, so joins cannot
+   silently change what a row means.
 3. **Definitions.** Only `delivered` orders count. Orders are counted by distinct
-   `order_id`. Average order value uses order totals, not item rows.
+   `order_id`. Average order value uses order totals, not item rows. Customer
+   spend is summed per order first, then per person.
 4. **Date handling.** Purchase month comes from `order_purchase_timestamp`. Sparse
    2016 months and 2018-09 are kept in the data and excluded from trend charts.
 5. **Missing categories.** 1,603 items without a category are labelled `unknown`
    (1.29% of window value), not dropped.
-6. **Reconciliation.** Every total ties to the earlier milestone to the cent.
+6. **Reconciliation.** Every total ties to the earlier milestone to the cent, and
+   the scripts assert the verified totals so a change cannot pass silently.
+7. **Testing.** Automated tests check the loader's guarantees (see below).
 
 Detailed notes are in [`docs/`](docs/).
 
@@ -76,12 +95,13 @@ pip install -r requirements.txt
 ### Get the data
 
 The data is not included, because the licence (CC BY-NC-SA 4.0) restricts
-redistribution. Download it from Kaggle, extract it, and copy these four files into
-`data/raw/`:
+redistribution. Download it from Kaggle, extract it, and copy these **five** files
+into `data/raw/`:
 
 - `olist_order_items_dataset.csv`
 - `olist_products_dataset.csv`
 - `olist_orders_dataset.csv`
+- `olist_customers_dataset.csv`
 - `product_category_name_translation.csv`
 
 ## Run
@@ -92,19 +112,33 @@ python src/run_all.py --with-diagnostics   # also runs the data-quality checks
 ```
 
 Scripts can also be run on their own, from the project root, for example
-`python src/monthly.py`.
+`python src/customers.py`.
+
+## Tests
+
+```bash
+pytest -v
+```
+
+Fourteen tests check the loader's guarantees on small synthetic datasets: row
+count preserved, one row per order item, no unlabelled categories, datetime
+parsing, a clear error for missing files, and duplicate product or customer keys
+rejected instead of silently multiplying rows. One further test checks the real
+data against the verified figures and is skipped if the CSVs are absent.
 
 ## Project structure
 
 ```
 sales-intelligence/
 ├── data/raw/              # Olist CSVs (not tracked)
-├── docs/                  # Notes: discovery, joins, metrics, time, product performance
+├── docs/                  # Notes: discovery, joins, metrics, time, products, customers
 ├── figures/               # Charts used in this README
 ├── outputs/               # Generated tables (not tracked)
+├── tests/
+│   └── test_load_data.py      # Loader tests (synthetic data + real-data check)
 ├── src/
 │   ├── config.py              # Shared settings: statuses, date window, category column
-│   ├── load_data.py           # Loads and merges the four tables, with integrity checks
+│   ├── load_data.py           # Loads and merges five tables, with integrity checks
 │   ├── inspect_data.py        # Milestone 1: data inspection
 │   ├── connect_data.py        # Milestone 2: join checks
 │   ├── metrics.py             # Milestone 3: core metrics
@@ -115,8 +149,11 @@ sales-intelligence/
 │   ├── product_recency.py     # Milestone 5.1: product recency
 │   ├── recency_baseline.py    # Baseline and seller checks
 │   ├── verify_claims.py       # Verifies the figures quoted in the docs
+│   ├── customer_check.py      # Verifies customer_id vs customer_unique_id
+│   ├── customers.py           # Customer analytics: repeat rate, spend, cohorts
 │   ├── charts.py              # Milestone 6: figures
 │   └── run_all.py             # Runs the pipeline in order
+├── pytest.ini
 └── requirements.txt
 ```
 
@@ -124,8 +161,13 @@ sales-intelligence/
 
 - **Item value is not profit.** The dataset has no cost or margin data.
 - **No quantity column.** Row counts are reported as "item records", not units.
-- **Order reach is not customer reach.** Counts show orders containing a product,
-  not unique customers.
+- **Order counts are not customer counts.** Product figures count orders containing
+  a product. Customer figures use `customer_unique_id`, Olist's own identifier,
+  whose accuracy in linking one person's accounts cannot be verified.
+- **Repeat rates depend on the observation window.** About 3% returned within the
+  window; customers who first bought late had less time to return, which is why
+  a separate 90-day check on observable customers is reported.
+- **Top customers are mostly single large purchases**, not evidence of loyalty.
 - **August 2018 is a lower bound.** Purchases thin out after about 20 August, and
   the dataset cannot say why.
 - **2016 is sparse.** Sept-Dec 2016 have almost no delivered orders and are
@@ -138,13 +180,3 @@ sales-intelligence/
 
 Dataset: Olist, *Brazilian E-Commerce Public Dataset by Olist* (Kaggle), CC BY-NC-SA 4.0.
 This project is for non-commercial, educational and portfolio use.
-
-## Tests
-
-```bash
-pytest -v
-```
-
-Synthetic-data tests check the loader's guarantees (row count, grain, category
-labels, rejected duplicate keys). One test checks the real data against the
-verified figures and is skipped if the CSVs are absent.

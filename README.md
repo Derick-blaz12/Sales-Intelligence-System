@@ -138,3 +138,13 @@ sales-intelligence/
 
 Dataset: Olist, *Brazilian E-Commerce Public Dataset by Olist* (Kaggle), CC BY-NC-SA 4.0.
 This project is for non-commercial, educational and portfolio use.
+
+## Tests
+
+```bash
+pytest -v
+```
+
+Synthetic-data tests check the loader's guarantees (row count, grain, category
+labels, rejected duplicate keys). One test checks the real data against the
+verified figures and is skipped if the CSVs are absent.

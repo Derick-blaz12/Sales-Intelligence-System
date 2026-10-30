@@ -40,6 +40,15 @@ def write_raw(dir_: Path, products=None):
         orders[col] = "2017-03-20 09:00:00"
     orders.to_csv(dir_ / "olist_orders_dataset.csv", index=False)
 
+    # NEW: customers file (u1 = same person, two orders)
+    pd.DataFrame({
+        "customer_id": ["c1", "c2", "c3"],
+        "customer_unique_id": ["u1", "u1", "u2"],
+        "customer_zip_code_prefix": [1000, 1000, 2000],
+        "customer_city": ["a", "a", "b"],
+        "customer_state": ["SP", "SP", "RJ"],
+    }).to_csv(dir_ / "olist_customers_dataset.csv", index=False)
+
     pd.DataFrame({
         "product_category_name": ["cama_mesa_banho", "beleza_saude"],
         "product_category_name_english": ["bed_bath_table", "health_beauty"],
@@ -63,7 +72,8 @@ def test_row_count_equals_item_rows(raw):
 def test_expected_columns_present(raw):
     expected = {"order_id", "order_item_id", "product_id", "price", "freight_value",
                 "order_status", "order_purchase_timestamp",
-                "product_category_name", "product_category_name_english"}
+                "product_category_name", "product_category_name_english",
+                "customer_unique_id"}
     assert expected <= set(load_merged(raw).columns)
 
 
@@ -106,6 +116,26 @@ def test_duplicate_product_ids_are_rejected(tmp_path):
 
 def test_missing_file_gives_clear_error(tmp_path):
     with pytest.raises(FileNotFoundError, match="olist_order_items_dataset.csv"):
+        load_merged(tmp_path)
+
+
+def test_customer_unique_id_never_missing(raw):
+    assert load_merged(raw)["customer_unique_id"].notna().all()
+
+
+def test_same_person_can_own_several_orders(raw):
+    df = load_merged(raw).drop_duplicates("order_id")
+    per_person = df.groupby("customer_unique_id")["order_id"].nunique()
+    assert per_person["u1"] == 2 and per_person["u2"] == 1
+
+
+def test_duplicate_customer_ids_are_rejected(tmp_path):
+    write_raw(tmp_path)
+    pd.DataFrame({
+        "customer_id": ["c1", "c1", "c2", "c3"],
+        "customer_unique_id": ["u1", "u1", "u1", "u2"],
+    }).to_csv(tmp_path / "olist_customers_dataset.csv", index=False)
+    with pytest.raises(MergeError):
         load_merged(tmp_path)
 
 

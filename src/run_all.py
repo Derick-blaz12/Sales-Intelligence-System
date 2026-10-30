@@ -24,6 +24,7 @@ CORE = [
     "product_performance.py",  # Milestone 5: categories and products
     "product_recency.py",      # Milestone 5.1: recency (writes outputs/product_recency.csv)
     "charts.py",               # Milestone 6: figures/
+    "customers.py",             # Milestone 7: customer analysis
 ]
 
 DIAGNOSTICS = [
@@ -31,6 +32,8 @@ DIAGNOSTICS = [
     "tail_diagnostic.py",
     "verify_claims.py",
     "recency_baseline.py",     # needs outputs/product_recency.csv, so it runs after recency
+    "charts.py",               # re-run charts to include recency baseline
+    "customer_check.py",
 ]
 
 
